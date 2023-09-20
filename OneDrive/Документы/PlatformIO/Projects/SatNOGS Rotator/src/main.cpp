@@ -35,7 +35,15 @@
 #define MAX_M2_ANGLE       180   ///< Maximum angle of elevation
 #define DEFAULT_HOME_STATE HIGH  ///< Change to LOW according to Home sensor
 #define HOME_DELAY         12000 ///< Time for homing Deceleration in millisecond
+#define s1_az 3
+#define s2_az 2
+#define key_az 4
+#define s1_el 5
+#define s2_el 6
+#define key_el 7
 
+
+#include <GyverEncoder.h>
 #include <AccelStepper.h>
 #include <Wire.h>
 //#include <globals.h>
@@ -45,6 +53,11 @@
 #include "endstop.h"
 //#include <watchdog.h>
 
+int x = 10; //величина стандартного шага энкодера
+int y = 50; // величина шага энкодера при удержании
+int z = 100; // величина шага быстрого поворота энкодера
+volatile int encAz = 0; //переменная для хранения значения поворота энкодера
+volatile int encEl = 0;
 uint32_t t_run = 0; // run time of uC
 easycomm comm;
 AccelStepper stepper_az(1, 3, 2);
@@ -55,8 +68,13 @@ endstop switch_az(SW1, DEFAULT_HOME_STATE), switch_el(SW2, DEFAULT_HOME_STATE);
 enum _rotator_error homing(int32_t seek_az, int32_t seek_el);
 int32_t deg2step(float deg);
 float step2deg(int32_t step);
+Encoder encEl(s1_el, s2_el, key_el);
+Encoder encAz(s1_az, s2_az, key_az); //обЪект энкодера
 
 void setup() {
+    
+    attachInterrupt(0, encAz, CHANGE); //прерывание на вращение энкодера
+    attachInterrupt(1, encEl, CHANGE);
     // Homing switch
     switch_az.init();
     switch_el.init();
@@ -223,4 +241,80 @@ int32_t deg2step(float deg) {
 /**************************************************************************/
 float step2deg(int32_t step) {
     return (360.00 * step / (SPR * RATIO));
+}
+/**************************************************************************/
+void encAz(){
+  encAz.tick();
+  if (encAz.isRight()){
+    encAz+=x;
+    rotateMotor_Az(x);
+  }
+  else if (encAz.isLeft()){
+    encAz-=x;
+    rotateMotor_Az(-x);
+  if (encAz.isRightH()){
+    encAz+=y;
+    rotatemotor_Az(y)
+  }
+  else if (encAz.isLeftH()){
+    encAz-=y;
+    rotateMotor_Az(-y);
+  }
+  if (encAz.isFastR()){
+    encAz+=z;
+    rotateMotor_Az(z);
+  }
+  else if(encAz.isFastL()){
+    encAz-=z;
+    rotateMotor_Az(-z);
+  }
+  if (encAz.isTurn()){
+    Serial.println("");
+    Serial.println(encAz);
+  }
+  }
+}
+void encEl(){
+  enc1.tick();
+  if (encEl.isRight()){
+    encEl+=x;
+    rotateMotor_El(x);
+  }
+  else if (encEl.isLeft()){
+    encEl-=x;
+    rotateMotor_El(-x);
+  if (encEl.isRightH()){
+    encEl+=y;
+    rotatemotor_El(y);
+  }
+  else if (encEl.isLeftH()){
+    encEl-=y;
+    rotateMotor_El(-y);
+  }
+  if (encEl.isFastR()){
+    encEl+=z;
+    rotateMotor_El(z);
+  }
+  else if(encEl.isFastL()){
+    encEl-=z;
+    rotateMotor_El(-z);
+  }
+  if (encEl.isTurn()){
+    Serial.println("");
+    Serial.print(encEl);
+  }
+  }
+}
+
+void rotateMotor_Az(int steps){
+
+  stepper_az.moveTo(stepper_az.currentPosition()+steps);
+  stepper_az.runToPosition();
+
+}
+void rotateMotor_El(int steps){
+
+  stepper_el.moveTo(stepper_el.currentPosition()+steps);
+  stepper_el.runToPosition();
+
 }
