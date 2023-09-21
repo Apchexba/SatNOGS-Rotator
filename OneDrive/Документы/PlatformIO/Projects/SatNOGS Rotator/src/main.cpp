@@ -72,9 +72,13 @@ Encoder encEl(s1_el, s2_el, key_el);
 Encoder encAz(s1_az, s2_az, key_az); //обЪект энкодера
 
 void setup() {
-    
+    pinMode(s1_az, INPUT);
+    pinMode(s2_az, INPUT);
+    pinMode(key_az, INPUT);
+
     attachInterrupt(0, encAz, CHANGE); //прерывание на вращение энкодера
     attachInterrupt(1, encEl, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(s1_az), encoderRotate, RISING);
     // Homing switch
     switch_az.init();
     switch_el.init();
@@ -243,7 +247,7 @@ float step2deg(int32_t step) {
     return (360.00 * step / (SPR * RATIO));
 }
 /**************************************************************************/
-void encAz(){
+/*void encAz(){
   encAz.tick();
   if (encAz.isRight()){
     encAz+=x;
@@ -317,4 +321,16 @@ void rotateMotor_El(int steps){
   stepper_el.moveTo(stepper_el.currentPosition()+steps);
   stepper_el.runToPosition();
 
+}*/
+void encoderRotate(){
+  if (digitalRead(s1_az) == digitalRead(s2_az)){
+    position = 20;
+    stepper_az.step(position);
+  }
+  else
+  position = -20;
+  stepper_az.step(position);
+}
+void encoderClick(){
+  
 }
